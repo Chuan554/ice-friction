@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>V形槽定轨——冰与金属摩擦系数的精准测量与规律研究 · 受力分析</title>
+<style>
+:root{
+  --bg:#070b14;--panel:#0f1626;--line:#22304a;--txt:#dce6f5;--dim:#7d8fa8;
+  --cyan:#3ee0ff;--amber:#ffb54d;--green:#4ade80;--pink:#ff5c8a;--purple:#a78bfa;
+  --orange:#ff8c1a;--yellow:#ffe066;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{
+  background:radial-gradient(900px 500px at 20% -10%,#12203c 0%,#070b14 65%);
+  color:var(--txt);min-height:100vh;padding:12px 10px 40px;
+  font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+}
+.wrap{max-width:1200px;margin:0 auto}
+header{text-align:center;padding:14px 0 10px}
+h1{
+  font-size:clamp(16px,4.6vw,23px);font-weight:800;letter-spacing:.3px;
+  background:linear-gradient(92deg,#3ee0ff,#a78bfa 50%,#ff5c8a);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.sub{color:var(--dim);font-size:11.5px;margin-top:6px;line-height:1.65}
+.sub b{color:var(--cyan)}
+.card{
+  background:linear-gradient(180deg,var(--panel) 0%,#0c1320 100%);
+  border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:12px;
+}
+.card h3{
+  font-size:12.5px;font-weight:600;color:var(--cyan);letter-spacing:.5px;
+  margin-bottom:10px;display:flex;align-items:center;gap:7px;
+}
+.card h3::before{
+  content:'';width:3px;height:12px;border-radius:2px;
+  background:linear-gradient(180deg,var(--cyan),var(--purple));
+}
+.group-bar{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
+.diagrams{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.diagrams .card{margin-bottom:0}
+canvas{display:block;width:100%;border-radius:10px;background:#080d16}
+#mainCanvas{height:400px}
+#secCanvas{height:400px}
+@media(max-width:900px){
+  #mainCanvas{height:360px}
+  #secCanvas{height:360px}
+}
+@media(max-width:600px){
+  #mainCanvas{height:320px}
+  #secCanvas{height:320px}
+}
+.ctl{margin-bottom:12px}
+.ctl:last-child{margin-bottom:0}
+.ctl label{
+  display:flex;justify-content:space-between;align-items:baseline;
+  font-size:12px;color:var(--dim);margin-bottom:7px;
+}
+.ctl label b{
+  color:var(--amber);font-family:ui-monospace,Consolas,monospace;
+  font-size:15px;font-weight:700;
+}
+input[type=range]{
+  -webkit-appearance:none;width:100%;height:6px;border-radius:4px;
+  background:linear-gradient(90deg,var(--cyan),var(--purple));outline:none;
+  touch-action:pan-y;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:26px;height:26px;border-radius:50%;
+  background:#fff;border:4px solid var(--cyan);cursor:pointer;
+  box-shadow:0 0 14px rgba(62,224,255,.65);
+}
+input[type=range]::-moz-range-thumb{
+  width:24px;height:24px;border-radius:50%;background:#fff;
+  border:4px solid var(--cyan);cursor:pointer;
+}
+.chip{
+  padding:8px 16px;border-radius:20px;border:1px solid var(--line);
+  background:#141d2f;color:var(--dim);cursor:pointer;font-size:12px;
+  font-family:inherit;transition:.2s;
+}
+.chip:hover{border-color:var(--cyan);color:var(--cyan)}
+.chip.on{
+  background:linear-gradient(135deg,#1b3357,#1a2740);
+  border-color:var(--cyan);color:var(--cyan);
+  box-shadow:0 0 14px rgba(62,224,255,.25);
+}
+.readout{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+@media(min-width:560px){.readout{grid-template-columns:repeat(4,1fr)}}
+.ro{
+  background:#0a111e;border:1px solid var(--line);border-radius:9px;
+  padding:9px 10px;position:relative;overflow:hidden;
+}
+.ro::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:2.5px;
+  background:var(--cyan);opacity:.6;
+}
+.ro .k{font-size:10px;color:var(--dim);letter-spacing:.3px;line-height:1.4}
+.ro .v{
+  font-size:16px;font-weight:700;font-family:ui-monospace,Consolas,monospace;
+  color:var(--cyan);margin-top:2px;
+}
+.ro.hi::before{background:var(--amber)}
+.ro.hi .v{color:var(--amber)}
+.ro.gr::before{background:var(--green)}
+.ro.gr .v{color:var(--green)}
+.ro.pk::before{background:var(--pink)}
+.ro.pk .v{color:var(--pink)}
+.formula{
+  background:#0a111e;border-left:2.5px solid var(--purple);
+  border-radius:0 9px 9px 0;padding:11px 13px;margin-top:12px;
+  font-size:12.5px;color:var(--dim);line-height:2.4;
+}
+.formula b{color:var(--amber);font-family:ui-monospace,Consolas,monospace}
+.formula .hl{color:var(--cyan)}
+.formula .vec{
+  position: relative;
+  display: inline-block;
+}
+.formula .vec::before{
+  content: '→';
+  position: absolute;
+  top: -0.40em;
+  left: 50%;
+  transform: translateX(-55%);
+  font-size: 0.75em;
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+  color: inherit;
+}
+.legend{
+  display:flex;gap:12px;flex-wrap:wrap;font-size:11px;
+  color:var(--dim);margin-top:9px;
+}
+.legend i{
+  display:inline-block;width:16px;height:3px;border-radius:2px;
+  margin-right:5px;vertical-align:middle;
+}
+.legend .dash{
+  background-image:linear-gradient(90deg,currentColor 60%,transparent 60%);
+  background-size:8px 3px;background-repeat:repeat-x;height:3px;
+}
+.declaration{
+  background:linear-gradient(180deg,#0c1524 0%,#0a1018 100%);
+  border:1px solid #1a2740;border-radius:12px;
+  padding:14px 18px;margin-top:20px;
+  position:relative;
+}
+.declaration::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:linear-gradient(180deg,var(--cyan),var(--purple));
+  border-radius:12px 0 0 12px;
+}
+.declaration h4{
+  font-size:12px;font-weight:600;color:var(--cyan);
+  letter-spacing:1.5px;margin-bottom:10px;
+  display:flex;align-items:center;gap:8px;
+}
+.declaration h4::before{
+  content:'◈';color:var(--amber);font-size:14px;
+}
+.declaration p{
+  font-size:11.5px;color:var(--dim);line-height:2;
+  text-align:justify;letter-spacing:.2px;
+}
+.declaration p b{color:var(--txt);font-weight:600}
+.declaration p .hl{color:var(--amber);font-weight:600}
+.declaration .sign{
+  margin-top:12px;padding-top:10px;
+  border-top:1px dashed #1f2d44;
+  font-size:11px;color:#5d708a;
+  display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;
+}
+.declaration .sign span:last-child{color:var(--dim);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>V形槽定轨——冰与金属摩擦系数的精准测量与规律研究 · 受力分析</h1>
+  <div class="sub">
+    严格按设计报告图 12、图 13 绘制 · 通用受力图（不绑定材料）
+  </div>
+</header>
+
+<div class="card">
+  <div class="group-bar">
+    <button class="chip on" data-set="A">A组 不锈钢 40°</button>
+    <button class="chip" data-set="B">B组 不锈钢 30°</button>
+    <button class="chip" data-set="C">C组 不锈钢 20°</button>
+    <button class="chip" data-set="D">D组 紫铜 40°</button>
+    <button class="chip" data-set="E">E组 紫铜 30°</button>
+    <button class="chip" data-set="F">F组 紫铜 20°</button>
+  </div>
+</div>
+
+<div class="diagrams">
+  <div class="card">
+    <h3>图 12 · 冰块受力分析正视图</h3>
+    <canvas id="mainCanvas"></canvas>
+    <div class="legend">
+      <span style="color:#4ade80"><i style="background:#4ade80"></i>mg</span>
+      <span style="color:#a78bfa"><i style="background:#a78bfa"></i>N</span>
+      <span style="color:#ff5c8a"><i style="background:#ff5c8a"></i>f</span>
+      <span style="color:#ff8c1a"><i class="dash"></i>mg·sinθ</span>
+      <span style="color:#ffe066"><i class="dash"></i>mg·cosθ</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>图 13 · V 形槽截面受力分析图</h3>
+    <canvas id="secCanvas"></canvas>
+    <div class="legend">
+      <span style="color:#ef4444"><i class="dash"></i>N₁</span>
+      <span style="color:#e040fb"><i class="dash"></i>N₂</span>
+      <span style="color:#ffe066"><i class="dash"></i>mg·cosθ</span>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h3>调整实验参数</h3>
+
+  <div class="ctl">
+    <label>水平方向角 θ <b id="thetaTxt">40°</b></label>
+    <input type="range" id="theta" min="10" max="50" step="1" value="40">
+  </div>
+
+  <div class="ctl">
+    <label>V 形槽夹角 2φ <b id="vAngleTxt">90°</b></label>
+    <input type="range" id="vAngle" min="60" max="120" step="1" value="90">
+  </div>
+
+  <div class="ctl">
+    <label>受力矢量比例 <b id="vecScaleTxt">×1.00</b></label>
+    <input type="range" id="vecScale" min="0.5" max="2" step="0.05" value="1">
+  </div>
+</div>
+
+<div class="card">
+  <h3>实时受力读数</h3>
+  <div class="readout">
+    <div class="ro gr"><div class="k">重力 mg</div><div class="v" id="roMG">0.490</div></div>
+    <div class="ro gr"><div class="k">mg·sinθ</div><div class="v" id="roGx">0.315</div></div>
+    <div class="ro gr"><div class="k">mg·cosθ</div><div class="v" id="roGy">0.375</div></div>
+    <div class="ro"><div class="k">支持力 N</div><div class="v" id="roN">0.000</div></div>
+    <div class="ro pk"><div class="k">摩擦力 f</div><div class="v" id="roF">0.000</div></div>
+    <div class="ro hi"><div class="k">摩擦系数 μ</div><div class="v" id="roMu">0.000</div></div>
+    <div class="ro hi"><div class="k">加速度 a</div><div class="v" id="roA">0.000</div></div>
+    <div class="ro"><div class="k">V形槽夹角 2φ</div><div class="v" id="roAng">90°</div></div>
+  </div>
+
+  <div class="formula">
+    <span class="hl">报告原式：</span>
+    mg·sinθ − f = ma　　
+    <span class="vec">N</span> = <span class="vec">N<sub>1</sub></span> + <span class="vec">N<sub>2</sub></span>　　
+    <span class="vec">f</span> = <span class="vec">f<sub>1</sub></span> + <span class="vec">f<sub>2</sub></span><br>
+    <span class="hl">90° V 形槽：</span>
+    f = μ·N = μ·mg·cosθ·sin45°<br>
+    <span class="hl">支持力：</span>
+    N = mg·cosθ<br>
+    <span class="hl">反解摩擦系数（90°槽）：</span>
+    μ = (g·sinθ − a) / (g·cosθ)
+  </div>
+</div>
+
+<!-- ═══ 原创声明（图 13 名称已同步改好） ═══ -->
+<div class="declaration">
+  <h4>原 创 声 明</h4>
+  <p>
+    本作品（含本页交互式虚拟仿真程序、图 12 冰块受力分析正视图、
+    图 13 V 形槽截面受力分析图及全部物理计算代码）<b>由本团队独立开发完成</b>，
+    未经任何形式的抄袭或复制。所有受力分析严格依据本团队《V形槽定轨——冰与金属
+    摩擦系数的精准测量与规律研究》设计报告给出的物理模型独立绘制，
+    所有数值计算核心（等效斜面受力分解、摩擦力与支持力反解、可视化渲染）
+    均为自主推导并逐行编写，<span class="hl">未调用任何第三方物理引擎、
+    绘图库或已有仿真作品</span>。页面所用配色方案、交互逻辑与矢量绘制算法
+    亦为原创设计，不存在对已有开源或已发表作品的抄袭、改编或未经授权的引用。
+  </p>
+  <div class="sign">
+    <span>作品名称：冰—金属 V 形槽摩擦虚拟实验平台</span>
+    <span>2026年四川省大学生物理实验创新大赛</span>
+  </div>
+</div>
+
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   物理模型
+   ══════════════════════════════════════════════════════════════ */
+const G = 9.8;
+const V_REF = 0.8;
+const MASS_FIXED = 0.05;
+
+const MATERIALS = [
+  { name:'201不锈钢', mu0:0.050, kv:0.150, kr:0.30 },
+  { name:'紫铜',      mu0:0.030, kv:0.105, kr:0.22 }
+];
+
+const S = {
+  theta: 40,
+  vAngle: 90,
+  mass: MASS_FIXED,
+  vecScale: 1.0,
+  matIdx: 0,
+  Ra: 0.8
+};
+
+const material = () => MATERIALS[S.matIdx];
+
+function muValue() {
+  const m = material();
+  let mu = m.mu0 + m.kv * V_REF + m.kr * (S.Ra - 0.8);
+  return Math.max(0.005, Math.min(0.95, mu));
+}
+
+function forces() {
+  const th  = S.theta * Math.PI / 180;
+  const phi = S.vAngle * Math.PI / 360;
+  const m   = S.mass;
+  const mu  = muValue();
+
+  const mg = m * G;
+  const gx = mg * Math.sin(th);
+  const gy = mg * Math.cos(th);
+
+  const N = gy;
+  const f = mu * N;
+  const a = (gx - f) / m;
+
+  return { mg, gx, gy, N, f, a, mu, th, phi };
+}
+
+const COLOR = {
+  mg:  '#4ade80',
+  gx:  '#ff8c1a',
+  gy:  '#ffe066',
+  f:   '#ff5c8a',
+  N:   '#a78bfa',
+  N1:  '#ef4444',
+  N2:  '#e040fb'
+};
+
+/* ══════════════════════════════════════════════════════════════
+   绘图工具
+   ══════════════════════════════════════════════════════════════ */
+const $ = id => document.getElementById(id);
+
+function fit(cv) {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const w = cv.clientWidth, h = cv.clientHeight;
+  if (cv.width !== Math.round(w*dpr) || cv.height !== Math.round(h*dpr)) {
+    cv.width  = Math.round(w*dpr);
+    cv.height = Math.round(h*dpr);
+  }
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return { ctx, W: w, H: h };
+}
+
+function arrowSolid(ctx, x1, y1, x2, y2, color, lw) {
+  const dx = x2-x1, dy = y2-y1;
+  const len = Math.hypot(dx, dy);
+  if (len < 1) return;
+  const ux = dx/len, uy = dy/len;
+  const px = -uy, py = ux;
+  ctx.save();
+  ctx.setLineDash([]);
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = lw;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+  const hl = Math.max(10, lw*4);
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - hl*ux + hl*0.42*px, y2 - hl*uy + hl*0.42*py);
+  ctx.lineTo(x2 - hl*ux - hl*0.42*px, y2 - hl*uy - hl*0.42*py);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function arrowDashed(ctx, x1, y1, x2, y2, color, lw) {
+  const dx = x2-x1, dy = y2-y1;
+  const len = Math.hypot(dx, dy);
+  if (len < 1) return;
+  const ux = dx/len, uy = dy/len;
+  const px = -uy, py = ux;
+  ctx.save();
+  ctx.setLineDash([9, 7]);
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = lw;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  const hl = Math.max(10, lw*4);
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - hl*ux + hl*0.42*px, y2 - hl*uy + hl*0.42*py);
+  ctx.lineTo(x2 - hl*ux - hl*0.42*px, y2 - hl*uy - hl*0.42*py);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.arcTo(x+w, y, x+w, y+h, r);
+  ctx.arcTo(x+w, y+h, x, y+h, r);
+  ctx.arcTo(x, y+h, x, y, r);
+  ctx.arcTo(x, y, x+w, y, r);
+  ctx.closePath();
+}
+
+function label(ctx, text, x, y, color, align) {
+  ctx.save();
+  ctx.font = '700 15px ui-monospace,monospace';
+  ctx.textAlign = align || 'left';
+  ctx.textBaseline = 'middle';
+  ctx.lineWidth = 5;
+  ctx.strokeStyle = 'rgba(8,13,22,.95)';
+  ctx.lineJoin = 'round';
+  ctx.strokeText(text, x, y);
+  ctx.fillStyle = color;
+  ctx.fillText(text, x, y);
+  ctx.restore();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   图 12：冰块受力分析正视图
+   ══════════════════════════════════════════════════════════════ */
+function drawMain() {
+  const cv = $('mainCanvas');
+  const { ctx, W, H } = fit(cv);
+  ctx.clearRect(0, 0, W, H);
+
+  ctx.strokeStyle = 'rgba(38,56,84,.4)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < W; x += 30) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+  for (let y = 0; y < H; y += 30) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+
+  const F = forces();
+  const th = F.th;
+
+  const L = 1.35;
+  const availW = W - 40;
+  const availH = H - 40;
+  const scale = Math.min(
+    availW / (L*Math.cos(Math.PI/4) + 0.34),
+    availH / (L*Math.sin(Math.PI/4) + 0.36)
+  );
+
+  const graphW = L * Math.cos(th) * scale;
+  const sx = (W - graphW) / 2;
+  const sy = H - 44;
+
+  ctx.strokeStyle = 'rgba(110,140,180,.45)';
+  ctx.setLineDash([6,6]);
+  ctx.lineWidth = 1.3;
+  ctx.beginPath();
+  ctx.moveTo(sx-14, sy);
+  ctx.lineTo(sx + graphW + 30, sy);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.strokeStyle = 'rgba(255,181,77,.7)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(sx, sy, 36, -th, 0);
+  ctx.stroke();
+
+  let thetaLabelX, thetaLabelY;
+  const thetaSafeAngle = 20 * Math.PI / 180;
+  if (th >= thetaSafeAngle) {
+    thetaLabelX = sx + Math.cos(th / 2) * 46;
+    thetaLabelY = sy - Math.sin(th / 2) * 46;
+  } else {
+    thetaLabelX = sx + 36 * Math.cos(th) + 12;
+    thetaLabelY = sy + 15;
+  }
+  ctx.fillStyle = '#ffb54d';
+  ctx.font = '700 14px ui-monospace,monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('θ', thetaLabelX, thetaLabelY);
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+
+  ctx.save();
+  ctx.translate(sx, sy);
+  ctx.rotate(-th);
+  const slotW = L * scale;
+
+  const grad = ctx.createLinearGradient(0, -22, 0, 0);
+  grad.addColorStop(0, '#24344a');
+  grad.addColorStop(.5, '#4c6b8f');
+  grad.addColorStop(1, '#93aac6');
+  ctx.fillStyle = grad;
+  roundRect(ctx, 0, -22, slotW, 22, 5);
+  ctx.fill();
+
+  ctx.strokeStyle = 'rgba(190,225,255,.9)';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(0, -22); ctx.lineTo(slotW, -22); ctx.stroke();
+  ctx.strokeStyle = 'rgba(190,225,255,.5)';
+  ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(slotW, 0); ctx.stroke();
+
+  ctx.strokeStyle = 'rgba(200,225,255,.3)';
+  ctx.lineWidth = 1;
+  for (let d = 0; d <= L+1e-6; d += 0.2) {
+    const px = d*scale;
+    ctx.beginPath(); ctx.moveTo(px, -22); ctx.lineTo(px, -27); ctx.stroke();
+  }
+
+  const bs = L * 0.55;
+  const iceW = 36, iceH = 26;
+  const iceBaseX = bs * scale;
+  const iceBaseY = -22;
+  const iceTop   = iceBaseY - iceH;
+  const iceLeft  = iceBaseX - iceW/2;
+
+  const ig = ctx.createLinearGradient(0, iceTop, 0, iceBaseY);
+  ig.addColorStop(0, '#eafcff');
+  ig.addColorStop(0.5, '#8fdcf5');
+  ig.addColorStop(1, '#2f93bb');
+  ctx.fillStyle = ig;
+  ctx.fillRect(iceLeft, iceTop, iceW, iceH);
+  ctx.strokeStyle = 'rgba(220,250,255,.95)';
+  ctx.lineWidth = 1.8;
+  ctx.strokeRect(iceLeft, iceTop, iceW, iceH);
+
+  ctx.strokeStyle = 'rgba(255,255,255,.35)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(iceLeft + 5, iceTop + 4);
+  ctx.lineTo(iceLeft + iceW - 5, iceTop + 4);
+  ctx.stroke();
+
+  const gLocalX = iceBaseX;
+  const gLocalY = iceBaseY - iceH/2;
+  ctx.fillStyle = '#ff5c8a';
+  ctx.beginPath();
+  ctx.arc(gLocalX, gLocalY, 3, 0, Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+
+  const cosT = Math.cos(th), sinT = Math.sin(th);
+  const cx = sx + gLocalX * cosT + gLocalY * sinT;
+  const cy = sy - gLocalX * sinT + gLocalY * cosT;
+  const ux = cosT, uy = -sinT;
+  const vdx = sinT, vdy = cosT;
+
+  const SCALE_F = 260 * S.vecScale;
+  const F_CAP   = 0.95;
+  const TARGET_RAD = 15 * Math.PI / 180;
+  const SCALE_f = Math.tan(TARGET_RAD) * SCALE_F * F_CAP / F.mu;
+
+  const mgLen = F.mg * SCALE_F;
+  arrowSolid(ctx, cx, cy, cx, cy+mgLen, COLOR.mg, 3.6);
+  label(ctx, 'mg', cx + 14, cy + mgLen + 15, COLOR.mg, 'left');
+
+  const gxLen = F.gx * SCALE_F;
+  const gxEndX = cx - ux*gxLen;
+  const gxEndY = cy - uy*gxLen;
+  arrowDashed(ctx, cx, cy, gxEndX, gxEndY, COLOR.gx, 3.2);
+
+  const lx1 = cx + (-ux*gxLen) * 0.60;
+  const ly1 = cy + (-uy*gxLen) * 0.60;
+  let offx1 = -uy * 34;
+  let offy1 =  ux * 34;
+  if (offy1 > 0) { offx1 = -offx1; offy1 = -offy1; }
+  label(ctx, 'mg·sinθ', lx1 + offx1 - 28, ly1 + offy1, COLOR.gx, 'center');
+
+  const gyLen = F.gy * SCALE_F;
+  const gyEndX = cx + vdx*gyLen;
+  const gyEndY = cy + vdy*gyLen;
+  arrowDashed(ctx, cx, cy, gyEndX, gyEndY, COLOR.gy, 3.0);
+
+  const lx2 = cx + vdx*gyLen * 0.60;
+  const ly2 = cy + vdy*gyLen * 0.60;
+  label(ctx, 'mg·cosθ', lx2 + 22, ly2, COLOR.gy, 'left');
+
+  const nLen = gyLen;
+  const nEndX = cx - vdx*nLen;
+  const nEndY = cy - vdy*nLen;
+  arrowSolid(ctx, cx, cy, nEndX, nEndY, COLOR.N, 3.6);
+  label(ctx, 'N', nEndX - vdy*22, nEndY + vdx*22 - 4, COLOR.N, 'center');
+
+  const fLenRaw = F.f * SCALE_f;
+  const fLenCap = gxLen * F_CAP;
+  const fLen = Math.min(fLenRaw, fLenCap);
+  const fEndX = cx + ux*fLen;
+  const fEndY = cy + uy*fLen;
+  arrowSolid(ctx, cx, cy, fEndX, fEndY, COLOR.f, 3.6);
+  label(ctx, 'f', fEndX + 14, fEndY - 10, COLOR.f, 'left');
+
+  ctx.fillStyle = '#9db0c7';
+  ctx.font = '600 18px system-ui,-apple-system,"PingFang SC",sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText('θ = ' + S.theta + '°', 14, 14);
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+}
+
+/* ══════════════════════════════════════════════════════════════
+   图 13：V 形槽截面受力分析图
+   ══════════════════════════════════════════════════════════════ */
+function drawSection() {
+  const cv = $('secCanvas');
+  const { ctx, W, H } = fit(cv);
+  ctx.clearRect(0, 0, W, H);
+
+  ctx.strokeStyle = 'rgba(38,56,84,.4)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < W; x += 30) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+  for (let y = 0; y < H; y += 30) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+
+  const F = forces();
+  const phi = F.phi;
+
+  const vx = W/2;
+  const vy = H * 0.70;
+  const L = Math.min(W*0.36, H*0.38);
+  const wallDX = L * Math.sin(phi);
+  const wallDY = L * Math.cos(phi);
+  const lx = vx - wallDX, ly = vy - wallDY;
+  const rx = vx + wallDX, ry = vy - wallDY;
+
+  const drawWall = (x1, y1, x2, y2) => {
+    const g = ctx.createLinearGradient(x1, y1, x2, y2);
+    g.addColorStop(0, '#2c3f57');
+    g.addColorStop(1, '#7b95b5');
+    ctx.strokeStyle = g;
+    ctx.lineWidth = 12;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(190,220,255,.7)';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+  };
+  drawWall(vx, vy, lx, ly);
+  drawWall(vx, vy, rx, ry);
+
+  const R = Math.min(34, L * 0.42);
+  const distToV = R / Math.sin(phi);
+  const iceX = vx;
+  const iceY = vy - distToV;
+
+  const ig = ctx.createRadialGradient(iceX - R*0.35, iceY - R*0.4, R*0.1, iceX, iceY, R);
+  ig.addColorStop(0, '#eafcff');
+  ig.addColorStop(.55, '#8fdcf5');
+  ig.addColorStop(1, '#2f93bb');
+  ctx.fillStyle = ig;
+  ctx.beginPath();
+  ctx.arc(iceX, iceY, R, 0, Math.PI*2);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(220,250,255,.9)';
+  ctx.lineWidth = 1.8;
+  ctx.stroke();
+
+  const SCALE_F = 260 * S.vecScale;
+  const gyLen = F.gy * SCALE_F;
+  const nLen = gyLen / (2 * Math.sin(phi));
+
+  const n1x =  Math.cos(phi), n1y = -Math.sin(phi);
+  const n2x = -Math.cos(phi), n2y = -Math.sin(phi);
+
+  arrowDashed(ctx, iceX, iceY,
+              iceX + n1x*nLen, iceY + n1y*nLen, COLOR.N1, 3.4);
+  arrowDashed(ctx, iceX, iceY,
+              iceX + n2x*nLen, iceY + n2y*nLen, COLOR.N2, 3.4);
+
+  label(ctx, 'N₁',
+        iceX + n1x*nLen + n1y*24,
+        iceY + n1y*nLen - n1x*24,
+        COLOR.N1, 'center');
+  label(ctx, 'N₂',
+        iceX + n2x*nLen - n2y*24,
+        iceY + n2y*nLen + n2x*24,
+        COLOR.N2, 'center');
+
+  arrowDashed(ctx, iceX, iceY, iceX, iceY + gyLen, COLOR.gy, 3.0);
+  label(ctx, 'mg·cosθ', iceX + 22, iceY + gyLen * 0.60, COLOR.gy, 'left');
+
+  ctx.fillStyle = '#9db0c7';
+  ctx.font = '600 18px system-ui,-apple-system,"PingFang SC",sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText('2φ = ' + S.vAngle + '°   φ = ' + (S.vAngle/2) + '°', 14, 14);
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+}
+
+/* ══════════════════════════════════════════════════════════════
+   读数 + 刷新
+   ══════════════════════════════════════════════════════════════ */
+function updateReadout() {
+  const F = forces();
+  $('roMG').textContent  = F.mg.toFixed(3);
+  $('roGx').textContent  = F.gx.toFixed(3);
+  $('roGy').textContent  = F.gy.toFixed(3);
+  $('roN').textContent   = F.N.toFixed(3);
+  $('roF').textContent   = F.f.toFixed(3);
+  $('roMu').textContent  = F.mu.toFixed(4);
+  $('roA').textContent   = F.a.toFixed(3);
+  $('roAng').textContent = S.vAngle + '°';
+}
+
+function refresh() {
+  drawMain();
+  drawSection();
+  updateReadout();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   UI 绑定
+   ══════════════════════════════════════════════════════════════ */
+$('theta').addEventListener('input', e => {
+  S.theta = +e.target.value;
+  $('thetaTxt').textContent = S.theta + '°';
+  refresh();
+});
+$('vAngle').addEventListener('input', e => {
+  S.vAngle = +e.target.value;
+  $('vAngleTxt').textContent = S.vAngle + '°';
+  refresh();
+});
+$('vecScale').addEventListener('input', e => {
+  S.vecScale = +e.target.value;
+  $('vecScaleTxt').textContent = '×' + S.vecScale.toFixed(2);
+  refresh();
+});
+
+const PRESETS = {
+  A: { theta:40, vAngle:90, matIdx:0 },
+  B: { theta:30, vAngle:90, matIdx:0 },
+  C: { theta:20, vAngle:90, matIdx:0 },
+  D: { theta:40, vAngle:90, matIdx:1 },
+  E: { theta:30, vAngle:90, matIdx:1 },
+  F: { theta:20, vAngle:90, matIdx:1 }
+};
+
+document.querySelectorAll('.chip').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.chip').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+
+    const p = PRESETS[btn.dataset.set];
+    S.theta  = p.theta;
+    S.vAngle = p.vAngle;
+    S.matIdx = p.matIdx;
+
+    $('theta').value  = S.theta;   $('thetaTxt').textContent = S.theta + '°';
+    $('vAngle').value = S.vAngle;  $('vAngleTxt').textContent = S.vAngle + '°';
+
+    refresh();
+  });
+});
+
+let rzT = null;
+window.addEventListener('resize', () => {
+  clearTimeout(rzT);
+  rzT = setTimeout(refresh, 150);
+});
+
+refresh();
+</script>
+</body>
+</html>
